@@ -28,3 +28,12 @@ Shows 105 separate county profiles in grey
 
 ![Sumner County](County/Sumner-County-Inactive-Voter-Rates.svg)
 
+## Inactive Summary Rate Map
+
+This map is based on the data in a Jan 2, 2025 Kansas voter registration file
+
+![InactiveCOuntyRate](Kansas-State-1.png)
+
+## Missing files
+
+`Voter Registration Elections Statistics Data` page on the [Kansas Secretary of State's website](https://sos.ks.gov/elections/election-statistics-data.html) is missing to a number of links to "inactive" statistics since 2021.  These missing files will be added to this analysis when available.
