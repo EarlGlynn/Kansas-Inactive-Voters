@@ -1,0 +1,385 @@
+---
+title: "Kansas Secretary of State Monthly Inactive Voter Plots by County"
+author: "Earl F Glynn<br><small>watchdoglab.substack.com/</small>"
+date: "<small>`r Sys.Date()`</small>"
+output:
+  html_document:
+    code_download: true
+    theme: cerulean
+    toc: yes
+    toc_depth:  3
+    toc_float:
+      collapsed:  yes
+      smooth_scroll: yes
+    number_sections: yes
+    code_folding:  show
+---
+
+Kansas Secretary of State "Inactive" Data: [Election Statistics Data, Voter Registration, Monthly County  Totals](https://sos.ks.gov/elections/election-statistics-data.html)
+
+See data problems that should be addressed by Kansas Secretary of State in `Inactive-Stats.Rmd`.
+
+```{r setup, echo = FALSE}
+# http://biostat.mc.vanderbilt.edu/wiki/Main/KnitrHtmlTemplate
+require(Hmisc)    # provides knitrSet and other functions
+knitrSet(lang = 'markdown',   # If using blogdown: knitrSet(lang='blogdown')
+         fig.align = 'left',
+         w = 6.5,
+         h = 4.5,
+         cache = FALSE)
+```
+
+`r hidingTOC(buttonLabel = "Outline")`
+
+```{r startYourEngines, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  comment = NA)
+
+time.1 <- Sys.time()
+```
+
+# Setup {.tabset .tabset-fade .tabset-pills}
+
+## {.active}
+
+## Constants
+
+```{r}
+plotCaptionLeft  <- "Kansas Secretary of State: Online Election Statistics (circles) [many months missing]; Voter files (triangles)"
+plotCaptionRight <- paste("watchdoglab.substack.com", format(Sys.time(), "%Y-%m-%d"))
+```       
+
+## Packages
+
+```{r Packages}
+library(tidyverse)
+library(lubridate)
+```
+
+Display formatting
+
+```{r Display}
+library(kableExtra)  # kable_styling
+```
+
+I/O
+
+```{r IO}
+library(readxl)      # read_xlsx
+library(readr)       # write_csv
+library(writexl)     # write_xlsx
+```
+
+## ggplot theme
+
+[ggplot Themes Gallery](https://www.datanovia.com/en/blog/ggplot-themes-gallery/)
+
+```{r ggplotTheme}
+theme_set(
+          theme_minimal() +
+
+          theme(
+                axis.text             = element_text(size = 10),
+                axis.title            = element_text(size = 14),
+
+                legend.position       = "bottom",
+
+                plot.caption          = element_text(hjust = c(0.0,1.0),
+                                                     size = 10),
+                plot.caption.position = "plot",
+
+                plot.title.position   = "plot",
+
+                strip.background      = element_rect(fill = "aliceblue"),
+                strip.text            = element_text(size = 14),
+
+                plot.title            = element_text(size = 14, color = "blue")
+               )
+         )
+```
+                                                  
+## Helper functions
+
+```{r Helpers}
+Show <- function(data, caption="", bigMark="",
+                 height = NULL, width = NULL, ...)
+{
+  data                                       |>
+  kable("html", caption=caption,
+        format.args=list(big.mark=bigMark))  |>
+  kable_styling(bootstrap_options=c("striped", "bordered", "condensed"),
+                position="left",
+                full_width=FALSE, ...)       |>
+  scroll_box(height = height, width = width)
+}
+```
+
+# Voter file stats
+
+```{r}
+voterSummary <- 
+  read_xlsx("Kansas-Voter-Counts-2023-02-13-thru-2025-01-02.xlsx") |>
+  select(County, Date, InactivePercent) |>
+  mutate(Date = ymd(Date))
+```
+
+# List of summary files
+
+"Long" format, suitable for ggplot
+
+```{r}
+filename <- "Kansas-SoS-Inactive-Voter-Stats-2021-06-01-thru-2025-02-01.xlsx"
+
+countySummary <- 
+  read_xlsx(filename) |>
+  mutate(Date = ymd(Date))
+
+glimpse(countySummary)
+```
+
+```{r}
+fivenum(countySummary$InactivePercent)
+```
+
+```{r}
+boxplot(countySummary$InactivePercent)
+```
+
+
+```{r}
+countySummary |>
+  filter(InactivePercent > 20) |>
+  Show()
+```
+
+
+# All Counties
+
+```{r CountyLines, fig.width = 10, fig.height = 6}
+stateStats   <- countySummary |> filter(County == "Kansas")
+stateVoters  <- voterSummary  |> filter(County == "Kansas")
+stateColor   <- "royalblue"
+
+allCountiesPlot <- 
+  ggplot() +
+    geom_line(data = countySummary, 
+              aes(x = Date,
+                  y = InactivePercent,
+                  group = County),
+              color = "grey")                                        +
+    
+    geom_line(data = stateStats,
+              aes(x = Date,
+                  y = InactivePercent),
+              color = stateColor,
+              linewidth = 1)                                         +
+    
+     geom_point(data = stateStats,
+              aes(x = Date,
+                  y = InactivePercent),
+              color = stateColor,
+              size = 3)                                              +
+    
+    geom_point(data = voterSummary |> filter(County == "Kansas"),
+              aes(x = Date,
+                  y = InactivePercent),
+              color = stateColor, fill= stateColor,
+              size = 3,
+              shape = 25)                                             +
+    
+    
+    scale_y_continuous(limits = c(0, 23),
+                       breaks = c(0, 5, 10, 15, 20),
+                       labels = c("0%", "5%", "10%", "15%", "20%"))  +
+    
+    scale_x_date(limits = c(ymd("2021-07-01"), ymd("2025-03-01")),
+                 date_breaks       = "3 months",
+                 date_minor_breaks = "1 month",
+                 date_labels = "%Y\n%b",
+                 expand = c(0,0))                                    +
+    
+    labs(title = "Percent Inactive Voters in Kansas",
+         subtitle = "Grey lines show inactive voter rate profiles for each of the 105 Kansas counties",
+         x = "Date",
+         y = "Percent Inactive Voters",
+         caption = c(plotCaptionLeft, plotCaptionRight))  +
+     theme(plot.title         = element_text(size = 14, color = stateColor),
+           plot.subtitle      = element_text(size = 14, color = "grey"),
+           axis.ticks.x       = element_line(),
+           panel.grid.major.x = element_line(linewidth = 0.5, color = "grey"),
+           panel.grid.minor.y = element_blank(),
+           panel.grid.major.y = element_line(linewidth = 0.5, color = "grey"))
+
+print(allCountiesPlot)
+```
+
+Save as PDF and SVG files
+
+```{r}
+pdf("Kansas-Inactive-Voter-Rates-All-Counties.pdf", 
+    width = 10, height = 6)  
+print(allCountiesPlot)
+dev.off()
+```
+
+```{r}
+svg("Kansas-Inactive-Voter-Rates-All-Counties.svg", 
+    width = 10, height = 6, pointsize = 8)  
+print(allCountiesPlot)
+dev.off()
+```
+
+
+# Single County
+
+```{r targetCountyFunction}
+PlotCounty <- function(targetCounty)
+{
+  targetStats  <- countySummary |> filter(County == targetCounty)
+  targetVoters <- voterSummary  |> filter(County == targetCounty)
+  targetColor  <- "firebrick"
+  
+  countyPlot <- 
+    ggplot() +
+     # geom_line(data = targetStats, 
+     #            aes(x = Date,
+     #                y = InactivePercent,
+     #                group = County),
+     #            color = targetColor)                                 +
+      
+      geom_point(data = targetStats,
+                aes(x = Date,
+                    y = InactivePercent),
+                color = targetColor,
+                size = 3)                                              +
+      
+      geom_point(data = targetVoters,
+                aes(x = Date,
+                    y = InactivePercent),
+                color = targetColor, fill= targetColor,
+                size = 3,
+                shape = 25)                                            +
+      
+     
+     # geom_line(data = stateStats,
+     #            aes(x = Date,
+     #                y = InactivePercent),
+     #            color = "blue",
+     #            linewidth = 1)                                       +
+      
+       geom_point(data = stateStats,
+                aes(x = Date,
+                    y = InactivePercent),
+                color = stateColor,
+                size = 3)                                              +
+      
+      geom_point(data = stateVoters,
+                aes(x = Date,
+                    y = InactivePercent),
+                color = stateColor, fill= stateColor,
+                size = 3,
+                shape = 25)                                             +
+      
+      
+      scale_y_continuous(limits = c(0, 23),
+                         breaks = c(0, 5, 10, 15, 20),
+                         labels = c("0%", "5%", "10%", "15%", "20%"))  +
+      
+      scale_x_date(limits = c(ymd("2021-07-01"), ymd("2025-03-01")),
+                   date_breaks       = "3 months",
+                   date_minor_breaks = "1 month",
+                   date_labels = "%Y\n%b",
+                   expand = c(0,0))                                    +
+      
+      labs(title    = "Percent Inactive Voters in Kansas",
+           subtitle = paste(targetCounty, "County"),
+           x = "Date",
+           y = "Percent Inactive Voters",
+           caption = c(plotCaptionLeft, plotCaptionRight))  +
+           theme(plot.subtitle      = element_text(size = 14, color = targetColor),
+                 plot.title         = element_text(size = 14, color = stateColor),
+                 axis.ticks.x       = element_line(),
+                 panel.grid.major.x = element_line(linewidth = 0.5, color = "grey"),
+                 panel.grid.minor.y = element_blank(),
+                 panel.grid.major.y = element_line(linewidth = 0.5, color = "grey"))
+
+  return(countyPlot)
+}
+```
+
+## Example County
+
+```{r SingleCounty, fig.width = 10, fig.height = 6}
+countyPlot <- PlotCounty("Sumner")
+print(countyPlot)
+```
+```{r}
+counties <- unique(countySummary$County) |> head(105)   # Remove final "Kansas" rwo
+counties
+```
+
+## All in single PDF
+
+```{r}
+pdf("Kansas-Inactive-Voter-Rates-By-County.pdf", 
+    width = 10, height = 6)  
+  
+  for (county in counties)
+  {
+    countyPlot <- PlotCounty(county)
+    print(countyPlot)
+  }
+
+  print(allCountiesPlot)
+  
+dev.off()
+```
+
+## Separate SVG files in "County" folder
+
+```{r}
+DIR <- "County"
+```
+
+```{r}
+if (!file.exists(DIR) )  
+{
+  dir.create(DIR)
+}
+```
+
+```{r}
+for (county in counties)
+{
+  countyPlot <- PlotCounty(county)
+    
+  svg(paste0(DIR, "/", county, "-County-Inactive-Voter-Rates.svg"), 
+      width = 10, height = 6, pointsize = 8) 
+    print(countyPlot)
+  dev.off()
+}
+```
+
+# Epilog {.tabset .tabset-fade .tabset-pills}
+
+## {.active}
+
+## Session Info
+
+```{r devtoolsSessionInfo}
+devtools::session_info()
+```
+
+</div>
+
+```{r epilogDeltaTime, echo=FALSE}
+time.2 <- Sys.time()
+processingTime <- paste("Processing time:", sprintf("%.1f",
+                        as.numeric(difftime(time.2,
+                                            time.1, units="secs"))), "secs\n")
+```
+
+`r processingTime`
+`r format(time.2, "%Y-%m-%d %H%M")`
+

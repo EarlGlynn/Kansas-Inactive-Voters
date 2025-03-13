@@ -1,0 +1,249 @@
+---
+title: "Kansas Secretary of State Monthly Inactive Voter Stats"
+author: "Earl F Glynn<br><small>watchdoglab.substack.com/</small>"
+date: "<small>`r Sys.Date()`</small>"
+output:
+  html_document:
+    code_download: true
+    theme: cerulean
+    toc: yes
+    toc_depth:  3
+    toc_float:
+      collapsed:  yes
+      smooth_scroll: yes
+    number_sections: yes
+    code_folding:  show
+---
+
+Kansas Secretary of State "Inactive" Data: [Election Statistics Data, Voter Registration, Monthly County  Totals](https://sos.ks.gov/elections/election-statistics-data.html)
+
+Secretary of State should address:
+
+* consistency in filenames across years 
+  (new filename format in 2025:  "2025.01.01 Percentage of Inactive Voters by County.xlsx)
+  
+* consistency in column headers across files 
+  ("COUNTY" was "14,464" in 2021-08-01,
+                "16,022" in 2021-09-01,
+                "16,000" in 2021-11-01, 2021-12-01,
+                "16,027" in 2022-01-01,
+                missing  in 2022-08-01 and later)
+                
+* missing "inactive" files: 
+
+**2021**
+
+  2021-10
+  
+**2022**
+
+  2022-02
+  2022-03
+  2022-04
+  2022-05
+  2022-06
+  2022-07
+  2022-09
+  2022-10
+  2022-11
+  2022-12
+
+**2023**
+
+  2023-01
+  2023-02
+  2023-03
+  2023-04
+  2023-05
+  2023-06
+  2023-07
+  2023-08
+  2023-09
+  2023-10
+
+**2024**
+
+  2024-05
+  2024-07
+  2024-08
+  2024-09
+  2024-10
+  2024-11
+  2024-12
+  
+**2025**
+
+  2025-03
+  
+
+```{r setup, echo = FALSE}
+# http://biostat.mc.vanderbilt.edu/wiki/Main/KnitrHtmlTemplate
+require(Hmisc)    # provides knitrSet and other functions
+knitrSet(lang = 'markdown',   # If using blogdown: knitrSet(lang='blogdown')
+         fig.align = 'left',
+         w = 6.5,
+         h = 4.5,
+         cache = FALSE)
+```
+
+`r hidingTOC(buttonLabel = "Outline")`
+
+```{r startYourEngines, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  comment = NA)
+
+time.1 <- Sys.time()
+```
+
+# Setup {.tabset .tabset-fade .tabset-pills}
+
+## {.active}
+
+## Packages
+
+```{r Packages}
+library(tidyverse)
+library(lubridate)
+```
+
+Display formatting
+
+```{r Display}
+library(kableExtra)  # kable_styling
+```
+
+I/O
+
+```{r IO}
+library(readxl)      # read_xlsx
+library(readr)       # write_csv
+library(writexl)     # write_xlsx
+```
+
+## Helper functions
+
+```{r Helpers}
+Show <- function(data, caption="", bigMark="",
+                 height = NULL, width = NULL, ...)
+{
+  data                                       |>
+  kable("html", caption=caption,
+        format.args=list(big.mark=bigMark))  |>
+  kable_styling(bootstrap_options=c("striped", "bordered", "condensed"),
+                position="left",
+                full_width=FALSE, ...)       |>
+  scroll_box(height = height, width = width)
+}
+```
+
+# List of summary files
+
+```{r Names}
+options(width = 50)
+summaryFile <- list.files(path       = ".",
+                          pattern    = "Percentage-of-Inactive|Percentage of Inactive",
+                          all.files  = FALSE,   # don't want "." and ".."
+                          full.names = FALSE,   # don't want path
+                          recursive  = FALSE,
+                          include.dirs = FALSE)  
+summaryFile
+```
+
+Note in 2025 filenames "." used instead of "-" and " " used instead of "-"
+
+Fix dates for consistency in any labels
+
+```{r}
+fileDate <- 
+  str_sub(summaryFile, 1, 10) |>
+  str_replace_all("\\.", "-")
+
+fileDate
+```
+
+# Function to read a single inactive file
+
+Extra rows need to be removed. 
+
+```{r readFile}
+readFile <- function(index)
+{
+  raw <- 
+    read_xlsx(summaryFile[index]) |>
+    select(-4)   # drop percentage; will compute below with additional digit
+  
+  # First column is inconsistently named and absent in later files.
+  names(raw) <- c("County", "Voters", "Inactive")
+ 
+  # Compute InactivePercent
+  raw <- 
+    raw                                                     |> 
+    mutate(
+            Date   = fileDate[index],
+            Active = Voters - Inactive,
+            InactivePercent = round(100 * Inactive / Voters, 2)
+           )                                                |>
+    relocate(Date,            .after = "County")            |>
+    relocate(Active,          .after = "Voters")            |>
+    relocate(InactivePercent, .after = "Inactive")       
+  
+  raw$County[nrow(raw)] <- "Kansas"    # Missing label for statewide values
+  
+  raw <- raw[-c(1, 107), ]   # Delete unwanted blank rows
+  
+  return(raw)
+}
+```
+
+# Read all inactive files
+
+```{r}
+countySummary <- 
+  1:length(summaryFile) |>
+  purrr::map_dfr(readFile)
+ 
+glimpse(countySummary)
+```
+
+Statewide values
+
+```{r}
+countySummary |> filter(County == "Kansas")  |> Show(bigMark = ",")
+```
+
+```{r}
+write_xlsx(countySummary, 
+           paste0("Kansas-SoS-Inactive-Voter-Stats-", 
+                  head(fileDate,1),
+                  "-thru-",
+                  tail(fileDate,1),
+                  ".xlsx"))
+```
+
+```{r}
+table(countySummary$Date)
+```
+
+# Epilog {.tabset .tabset-fade .tabset-pills}
+
+## {.active}
+
+## Session Info
+
+```{r devtoolsSessionInfo}
+devtools::session_info()
+```
+
+</div>
+
+```{r epilogDeltaTime, echo=FALSE}
+time.2 <- Sys.time()
+processingTime <- paste("Processing time:", sprintf("%.1f",
+                        as.numeric(difftime(time.2,
+                                            time.1, units="secs"))), "secs\n")
+```
+
+`r processingTime`
+`r format(time.2, "%Y-%m-%d %H%M")`
+
