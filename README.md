@@ -34,6 +34,25 @@ This map is based on the data in a Jan 2, 2025 Kansas voter registration file
 
 ![InactiveCOuntyRate](Kansas-State-1.png)
 
-## Missing files
+# Data Source
 
-`Voter Registration Elections Statistics Data` page on the [Kansas Secretary of State's website](https://sos.ks.gov/elections/election-statistics-data.html) is missing a number of links to "inactive" statistics since 2021.  These missing files will be added to this analysis when available.
+Kansas Secretary of State "Inactive" Data: [Election Statistics Data, Voter Registration, Monthly County  Totals](https://sos.ks.gov/elections/election-statistics-data.html)
+
+Several inconsistencies in the data files should be fixed:
+
+* Inconsistencies in filenames across years.
+  New filename format in 2025 is inconsisted with earlier years
+  `2025.01.01 Percentage of Inactive Voters by County.xlsx`
+
+* Inconsistencies in column headers across files.
+  "COUNTY" was "14,464" in 2021-08-01,
+               "16,022" in 2021-09-01,
+               "16,000" in 2021-11-01, 2021-12-01,
+               "16,027" in 2022-01-01,
+               missing  in 2022-08-01 and later
+
+* Missing files
+
+  Missing monthly files by year: 2021(1), 2022(10), 2023(10), 2024(7), 2025(1)
+
+* Lists of files on web page should be put the same order every year
