@@ -41,7 +41,7 @@ Kansas Secretary of State "Inactive" Data: [Election Statistics Data, Voter Regi
 Several inconsistencies in the data files should be fixed:
 
 * Inconsistencies in filenames across years.
-  New filename format in 2025 is inconsisted with earlier years
+  New filename format in 2025 is inconsistent with earlier years
   `2025.01.01 Percentage of Inactive Voters by County.xlsx`
 
 * Inconsistencies in column headers across files.
@@ -49,10 +49,9 @@ Several inconsistencies in the data files should be fixed:
                "16,022" in 2021-09-01,
                "16,000" in 2021-11-01, 2021-12-01,
                "16,027" in 2022-01-01,
-               missing  in 2022-08-01 and later
+               and missing  in 2022-08-01 and later
 
-* Missing files
-
+* Missing files.
   Missing monthly files by year: 2021(1), 2022(10), 2023(10), 2024(7), 2025(1)
 
-* Lists of files on web page should be put the same order every year
+* Lists of files on web page should be in the same order every year
